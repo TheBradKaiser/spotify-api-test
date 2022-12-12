@@ -22,7 +22,7 @@ def hello():
     #if user doesnt have permission then redirect to the spotify auth page
     #lets just do that every time.
     state = "asdfjkl"
-    scope = 'user-read-private user-read-email user-read-recently-played user-top-read'
+    scope = 'user-read-private user-read-email user-read-recently-played user-top-read user-library-read'
     return redirect(authUrlBase+
     'client_id='+s.clientId+
     '&scope='+scope+
@@ -59,18 +59,23 @@ def done():
     print(res.headers)
     songArtistList=[]
     tmpArtist=""
+    trackIds=[]
     for i in res.json()["items"]:
-        tmpSong = i["album"]["name"]
+        tmpAlbum = i["album"]["name"]
+        tmpTrack = i["name"]
         tmpArtist=""
+        tmpPop = i["popularity"]
         for j in i["artists"]:
             if tmpArtist !="":
                 tmpArtist +=", "+ j["name"]
             else:
                 tmpArtist=j["name"]
-        artistSongString = tmpArtist+" - "+tmpSong
+        artistSongString = tmpArtist+" - "+tmpAlbum+" - <b>"+tmpTrack+" - "+str(tmpPop)+"</b>"
         songArtistList.append(artistSongString)
-    returnString=""
+    returnString="Arists - Album - <b>Track</b> - Artist Popularity (0-100)<br> "
+    i = 1
     for a in songArtistList:
-        returnString+=a+"<br>"
+        returnString+=str(i)+". "+a+"<br>"
+        i+=1
     print(returnString)
     return str(returnString)

@@ -22,7 +22,7 @@ def hello():
     #if user doesnt have permission then redirect to the spotify auth page
     #lets just do that every time.
     state = "asdfjkl"
-    scope = 'user-read-private user-read-email user-read-recently-played user-top-read user-library-read'
+    scope = 'user-read-private user-read-email user-read-recently-played user-top-read user-library-read app-remote-control streaming user-modify-playback-state user-read-playback-state'
     return redirect(authUrlBase+
     'client_id='+s.clientId+
     '&scope='+scope+
@@ -55,11 +55,10 @@ def done():
                 "Content-Type":"application/json"}
     params = {"limit":50,"time_range":"long_term"}
     res = requests.get(apiUrl+"/me/top/tracks", headers=headers,params=params)
-    print(res)
-    print(res.headers)
+    #print(res)
+    #print(res.headers)
     songArtistList=[]
     tmpArtist=""
-    trackIds=[]
     for i in res.json()["items"]:
         tmpAlbum = i["album"]["name"]
         tmpTrack = i["name"]
@@ -72,10 +71,61 @@ def done():
                 tmpArtist=j["name"]
         artistSongString = tmpArtist+" - "+tmpAlbum+" - <b>"+tmpTrack+" - "+str(tmpPop)+"</b>"
         songArtistList.append(artistSongString)
-    returnString="Arists - Album - <b>Track</b> - Artist Popularity (0-100)<br> "
+    returnString="Arists - Album - <b>Track</b> - Artist Popularity (0-100)<br>"
     i = 1
     for a in songArtistList:
         returnString+=str(i)+". "+a+"<br>"
         i+=1
     print(returnString)
+
+    headers = {"Authorization":"Bearer "+session["access_token"],
+                "Content-Type":"application/json"}
+    params = {"limit":50,"time_range":"long_term"}
+
+    more = True
+    songArtistList=[]
+    nextUrl = apiUrl+"/me/player/recently-played"
+    while more == True:
+
+
+        res = requests.get(nextUrl, headers=headers,params=params)
+        print(str(res.json()))
+        #print(res.content)
+        for i in res.json()["items"]:
+            #print(str(i))
+            tmpAlbum = i["track"]["album"]["name"]
+            tmpTrack = i["track"]["name"]
+            tmpArtist=""
+            tmpPop = i["track"]["popularity"]
+            tmpPlayTime=i["played_at"]
+            for j in i["track"]["artists"]:
+                if tmpArtist !="":
+                    tmpArtist +=", "+ j["name"]
+                else:
+                    tmpArtist=j["name"]
+            artistSongString = str(tmpPlayTime)+" - "+tmpArtist+" - "+tmpAlbum+" - <b>"+tmpTrack+" - "+str(tmpPop)+"</b><br>"
+            songArtistList.append(artistSongString)
+        if res.json()["next"] is None:
+            more = False
+        else:
+            nextUrl = res.json()["next"]
+
+    recentlyPlayed="<br>Recently Played Songs<br>"
+    for i in songArtistList:
+        recentlyPlayed+=i
+    returnString+=recentlyPlayed
+
+    body = {"position_ms":0,"uris":["spotify:track:4cOdK2wGLETKBW3PvgPWqT"]}
+    userData = requests.get(apiUrl+"/me/player/devices",headers=headers)
+    print(str(userData.json()))
+    deviceId = userData.json()["devices"][0]["id"]
+    print(deviceId)
+
+
+    result = requests.put("https://api.spotify.com/v1/me/player/play?device_id="+deviceId,headers=headers,json=body)
+    print(result.text)
+
+
     return str(returnString)
+
+
